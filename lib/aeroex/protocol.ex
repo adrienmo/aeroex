@@ -1,4 +1,5 @@
 defmodule Aeroex.Protocol do
+  import Aeroex.Tools
 
   @delimiter "\n"
   @protocol_version 2
@@ -13,37 +14,36 @@ defmodule Aeroex.Protocol do
     message:               @message_type_msg
   }
 
-  @info1 %{
-    read:                  1,
-    get_all:               2,
-    #unused:               4,
-    batch:                 8,
-    xdr:                   16,
-    nobindata:             32,
-    consistency_level_b0:  64,
-    consistency_level_b1:  128
-  }
+  @info %{
+    ##### info1 byte #####################
+    read:                  bit_value(1,3),
+    get_all:               bit_value(2,3),
+    #unused:               bit_value(3,3),
+    batch:                 bit_value(4,3),
+    xdr:                   bit_value(5,3),
+    nobindata:             bit_value(6,3),
+    consistency_level_b0:  bit_value(7,3),
+    consistency_level_b1:  bit_value(8,3),
 
-  @info2 %{
-    write:                 1,
-    delete:                2,
-    generation:            4,
-    generation_gt:         8,
-    #unused:               16,
-    create_only:           32,
-    bin_create_only:       64,
-    respond_all_ops:       128
-  }
+    ##### info2 byte #####################
+    write:                 bit_value(1,2),
+    delete:                bit_value(2,2),
+    generation:            bit_value(3,2),
+    generation_gt:         bit_value(4,2),
+    #unused:               bit_value(5,2),
+    create_only:           bit_value(6,2),
+    bin_create_only:       bit_value(7,2),
+    respond_all_ops:       bit_value(8,2),
 
-  @info3 %{
-    last:                  1,
-    commit_level_b0:       2,
-    commit_level_b1:       4,
-    update_only:           8,
-    create_or_replace:     16,
-    replace_only:          32,
-    bin_replace_only:      64
-    #unused:               128
+    ##### info3 byte #####################
+    last:                  bit_value(1,1),
+    commit_level_b0:       bit_value(2,1),
+    commit_level_b1:       bit_value(3,1),
+    update_only:           bit_value(4,1),
+    create_or_replace:     bit_value(5,1),
+    replace_only:          bit_value(6,1),
+    bin_replace_only:      bit_value(7,1)
+    #unused:               bit_value(8,1)
   }
 
   @field_type %{
@@ -148,11 +148,19 @@ defmodule Aeroex.Protocol do
   end
 
   def get_message({:write, namespace, set, key, record}) do
-    get_message(:write, namespace, set, key, record)
+    fields = get_fields(namespace, set, key)
+    flags = [:write]
+    operations = Enum.map(record, fn({bin_name, data}) ->
+      {:write, bin_name, data}
+    end)
+    get_message(flags, fields, operations)
   end
 
   def get_message({:read, namespace, set, key}) do
-    get_message(:read, namespace, set, key)
+    fields = get_fields(namespace, set, key)
+    flags = [:read, :get_all]
+    operations = [{:read, <<>>, <<>>}]
+    get_message(flags, fields, operations)
   end
 
   def get_message(:info, names) when is_list(names) do
@@ -169,19 +177,17 @@ defmodule Aeroex.Protocol do
     [{:namespace, namespace}, {:set, set}, {:key,  <<3>> <> key}]
   end
 
-  def get_message(action, namespace, set, key, record \\ nil) do
-    info = get_info_bits(action)
-    generation = get_generation
+  def get_message(flags, fields, operations) do
+    info = get_info_bin(flags)
+    generation = 0
     record_ttl = 0
     transaction_ttl = 0
 
-    fields = get_fields(namespace, set, key)
-    fields_bin = get_fields_bin(fields)
     n_fields = length(fields)
+    fields_bin = get_fields_bin(fields)
 
-    operations = get_operations(action, record)
-    operations_bin = get_operations_bin(operations)
     n_ops = length(operations)
+    operations_bin = get_operations_bin(operations)
 
     data = fields_bin <> operations_bin
 
@@ -190,7 +196,7 @@ defmodule Aeroex.Protocol do
       info::binary-size(3),
       @unused,
       @unused,
-      generation::binary-size(4),
+      generation::unsigned-integer-size(32),
       record_ttl::unsigned-integer-size(32),
       transaction_ttl::unsigned-integer-size(32),
       n_fields::unsigned-integer-size(16),
@@ -202,15 +208,6 @@ defmodule Aeroex.Protocol do
     header = protocol_header(:message, length)
 
     header <> payload
-  end
-
-  def get_operations(:write, record) do
-    Enum.map(record, fn({bin_name, data}) ->
-      {:write, bin_name, data}
-    end)
-  end
-  def get_operations(:read, nil) do
-    [{:read, <<>>, <<>>}]
   end
 
   def get_operations_bin(list), do: get_operations_bin(list, <<>>)
@@ -259,24 +256,12 @@ defmodule Aeroex.Protocol do
     >>
   end
 
-  def get_generation() do
-    <<0, 0, 0, 0>>
+  def get_info_bin(flags) do
+    <<get_info_bin(flags, 0)::unsigned-integer-size(24)>>
   end
 
-  def get_info_bits(action) do
-    <<
-      get_info1_bits(action),
-      get_info2_bits(action),
-      get_info3_bits(action)
-    >>
+  def get_info_bin([], acc), do: acc
+  def get_info_bin([flag|flags], acc) do
+    get_info_bin(flags, acc + @info[flag])
   end
-
-  def get_info1_bits(:write), do: 0
-  def get_info1_bits(:read), do: @info1.read + @info1.get_all
-
-  def get_info2_bits(:write), do: @info2.write
-  def get_info2_bits(:read), do: 0
-
-  def get_info3_bits(:write), do: 0
-  def get_info3_bits(:read), do: 0
 end
