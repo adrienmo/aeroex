@@ -94,7 +94,12 @@ defmodule Aeroex.Protocol do
     >>
   end
 
-  def parse_response(<<_, @message_type_info, _::bytes-size(6), info::binary>>) do
+  def get_message_size(<<head::bytes-size(2), size::bytes-size(6), _::binary>>) do
+    <<size::unsigned-integer-size(48)>> = size
+    size
+  end
+
+  def parse_response(<<_, @message_type_info, size::bytes-size(6), info::binary>>) do
     case String.split(info, @delimiter) do
       [result, ""] ->
         {:ok, result}
@@ -122,7 +127,7 @@ defmodule Aeroex.Protocol do
     end
   end
 
-  def parse_response(_), do: {:error, "unknown format"}
+  def parse_response(truc), do: {:error, "unknown format #{inspect truc}"}
 
   def parse_payload(payload, _, _) do
     parse_fields(payload)
