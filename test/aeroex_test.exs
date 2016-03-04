@@ -10,4 +10,11 @@ defmodule AeroexTest do
 
     assert(record == result)
   end
+
+  test "info" do
+    {:ok, socket} = Aeroex.start_link(%{host: '127.0.0.1', port: 3000})
+    {:ok, result} = Aeroex.info(socket, ["build", "replicas-all"])
+
+    assert(length(result) == 2)
+  end
 end
