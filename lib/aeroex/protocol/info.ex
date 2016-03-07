@@ -26,7 +26,7 @@ defmodule Aeroex.Protocol.Info do
 
   def parse_b64_bitmap(b64_bitmap) do
     bitmap = Base.decode64!(b64_bitmap)
-    parse_bitmap(bitmap, 0, [])
+    parse_bitmap(bitmap, 0, []) |> Enum.reverse() 
   end
 
   def parse_bitmap(<<>>, _, acc), do: acc

@@ -2,19 +2,19 @@ defmodule AeroexTest do
   use ExUnit.Case
   doctest Aeroex
 
-  test "set/get" do
-    {:ok, socket} = Aeroex.start_link(%{host: '127.0.0.1', port: 3000})
-    record = %{"bin1" => "value1", "bin2" => "value2"}
-    {:ok, _} = Aeroex.write(socket, "test", "set", "key", record)
-    {:ok, result} = Aeroex.read(socket, "test", "set", "key")
+  setup_all do
+    :ok = Aeroex.connect(%{host: '127.0.0.1', port: 3000})
+  end
 
+  test "set/get" do
+    record = %{"bin1" => "value1", "bin2" => "value2"}
+    {:ok, _} = Aeroex.write("test", "set", "key_test", record)
+    {:ok, result} = Aeroex.read("test", "set", "key_test")
     assert(record == result)
   end
 
   test "info" do
-    {:ok, socket} = Aeroex.start_link(%{host: '127.0.0.1', port: 3000})
-    {:ok, result} = Aeroex.info(socket, ["build", "replicas-all"])
-
+    {:ok, result} = Aeroex.info(["build", "replicas-all"])
     assert(length(result) == 2)
   end
 end

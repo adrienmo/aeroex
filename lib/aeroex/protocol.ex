@@ -5,7 +5,7 @@ defmodule Aeroex.Protocol do
   @header_sz 22
   @unused 0
 
-  def get(:info, names, _) do
+  def get(:info, _, names) do
     data = get_info(names)
     size = byte_size(data)
     header = Header.get(:info, size)

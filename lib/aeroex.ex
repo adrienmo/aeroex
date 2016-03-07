@@ -32,7 +32,7 @@ defmodule Aeroex do
   end
 
   def info(ref \\ nil, names) do
-    execute(ref, :info, names, nil)
+    execute(ref, :info, nil, names)
   end
 
   defp get_fields(namespace, set, key) do
@@ -40,7 +40,8 @@ defmodule Aeroex do
   end
 
   defp execute(nil, flags, fields, operations) do
-
+    pool_name = Aeroex.Manager.get_pool_name(fields)
+    execute(pool_name, flags, fields, operations)
   end
 
   defp execute(pid, flags, fields, operations) when is_pid(pid) do

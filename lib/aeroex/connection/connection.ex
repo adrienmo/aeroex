@@ -12,7 +12,7 @@ defmodule Aeroex.Connection.Connection do
   end
 
   def connect(_info, state) do
-    opts = [:binary, active: :false]
+    opts = [:binary, active: :false, keepalive: true]
 
     case :gen_tcp.connect(to_char_list(state.node.host), state.node.port, opts) do
       {:ok, socket} ->
