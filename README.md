@@ -22,8 +22,8 @@ If [available in Hex](https://hex.pm/docs/publish), the package can be installed
 ## Usage
 
 ```elixir
-{:ok, socket} = Aeroex.start_link(%{host: '127.0.0.1', port: 3000})
+:ok = Aeroex.connect(%{host: '127.0.0.1', port: 3000})
 record = %{"bin1" => "value1", "bin2" => "value2"}
-{:ok, _} = Aeroex.write(socket, "test", "set", "key", record)
-{:ok, result} = Aeroex.read(socket, "test", "set", "key")
+{:ok, _} = Aeroex.write("test", "set", "key", record)
+{:ok, result} = Aeroex.read("test", "set", "key")
 ```
