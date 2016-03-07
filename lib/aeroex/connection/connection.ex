@@ -1,4 +1,4 @@
-defmodule Aeroex.Connection do
+defmodule Aeroex.Connection.Connection do
   use Connection
 
   @initial_state %{socket: nil, node: nil}
@@ -14,7 +14,7 @@ defmodule Aeroex.Connection do
   def connect(_info, state) do
     opts = [:binary, active: :false]
 
-    case :gen_tcp.connect(state.node.host, state.node.port, opts) do
+    case :gen_tcp.connect(to_char_list(state.node.host), state.node.port, opts) do
       {:ok, socket} ->
         {:ok, %{state | socket: socket}}
       {:error, reason} ->

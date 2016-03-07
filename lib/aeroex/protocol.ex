@@ -1,5 +1,5 @@
 defmodule Aeroex.Protocol do
-  alias Aeroex.Protocol.{Field, Operation, Header, Info}
+  alias Aeroex.Protocol.{Field, Operation, Header, Info, Flag}
 
   @delimiter "\n"
   @header_sz 22
@@ -28,13 +28,13 @@ defmodule Aeroex.Protocol do
     transaction_ttl = 0
     n_fields = length(fields)
     n_ops = length(operations)
-    info_bin = Info.get(flags)
+    flag_bin = Flag.get(flags)
     fields_bin = Field.get(fields)
     operations_bin = Operation.get(operations)
 
     <<
       @header_sz,
-      info_bin::binary-size(3),
+      flag_bin::binary-size(3),
       @unused,
       @unused,
       generation::unsigned-integer-size(32),
@@ -53,9 +53,9 @@ defmodule Aeroex.Protocol do
   def parse({:info, _}, data) do
     case String.split(data, @delimiter) do
       [result, ""] ->
-        {:ok, result}
+        {:ok, Info.parse(result)}
       results ->
-        {:ok, :lists.droplast(results)}
+        {:ok, Info.parse(:lists.droplast(results))}
     end
   end
 
