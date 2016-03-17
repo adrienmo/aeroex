@@ -9,6 +9,15 @@ defmodule Aeroex do
     Aeroex.Manager.connect(node)
   end
 
+  def scan(ref \\ nil, namespace, set) do
+    fields = [{:namespace, namespace}, {:set, set}, {:scan_options, <<0x28, 0x64>>}, {:trid, :crypto.rand_bytes(8)}]
+    flags = [:read]
+    operations = []
+
+    execute(ref, flags, fields, operations)
+  end
+
+
   def read(ref \\ nil, namespace, set, key) do
     fields = get_fields(namespace, set, key)
     flags = [:read, :get_all]
@@ -54,5 +63,9 @@ defmodule Aeroex do
     data = Aeroex.Protocol.get(flags, fields, operations)
     response = Aeroex.Connection.Pool.send(pool_name, data)
     Aeroex.Protocol.parse(response)
+  end
+
+  defp execute(pools, flags, fields, operations) when is_list(pools) do
+    for pool_name <- pools, do: execute(pool_name, flags, fields, operations)
   end
 end

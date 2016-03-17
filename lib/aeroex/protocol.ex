@@ -65,14 +65,15 @@ defmodule Aeroex.Protocol do
       _::bytes-size(5),
       result_code::unsigned-integer-size(8),
       _::bytes-size(12),
-      _n_fields::unsigned-integer-size(16),
-      _n_ops::unsigned-integer-size(16)
+      n_fields::unsigned-integer-size(16),
+      n_ops::unsigned-integer-size(16)
     >> = header
 
     case result_code do
       0 ->
-        response = Field.parse(payload)
-        {:ok, response}
+        {_fields, payload} = Field.parse(payload, n_fields)
+        operations = Operation.parse(payload)
+        {:ok, operations}
       error_code ->
         {:error, error_code}
     end

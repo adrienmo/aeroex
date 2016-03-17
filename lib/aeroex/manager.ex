@@ -42,10 +42,14 @@ defmodule Aeroex.Manager do
     pools |> elem(0)
   end
   def get_pool_name(fields) do
-    index = compute_partition_index(fields[:set], fields[:key])
-    [{_, distribution}] = :ets.lookup(__MODULE__, fields[:namespace])
     [{_, pools}] = :ets.lookup(__MODULE__, :pools)
-    elem(pools, elem(distribution, index))
+    if is_nil(fields[:key]) do
+      Tuple.to_list(pools)
+    else
+      index = compute_partition_index(fields[:set], fields[:key])
+      [{_, distribution}] = :ets.lookup(__MODULE__, fields[:namespace])
+      elem(pools, elem(distribution, index))
+    end
   end
 
   def compute_partition_index(set, key) do

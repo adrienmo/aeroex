@@ -8,7 +8,19 @@ defmodule Aeroex.Protocol.Field do
     gu_tid:                5,
     digest_ripe_array:     6,
     trid:                  7,
-    scan_options:          8
+    scan_options:          8,
+    index_name:           21,
+    index_filter:         22,
+    index_range:          23,
+    index_limit:          24,
+    index_order_by:       25,
+    udf_package_name:     30,
+    udf_function:         31,
+    udf_arglist:          32,
+    udf_op:               33,
+    query_binlist:        40,
+    batch_index:          41,
+    batch_index_with_set: 42
   }
 
   def get({type, data}) do
@@ -27,14 +39,12 @@ defmodule Aeroex.Protocol.Field do
     get(rest, acc <> get(field))
   end
 
-  def parse(payload), do: parse(payload, %{})
-  def parse(<<>>, acc), do: acc
-  def parse(<<size::unsigned-integer-size(32), _field_type::unsigned-integer-size(8), data::binary>>, acc) do
+  def parse(payload, n), do: parse(payload, %{}, n)
+  def parse(rest, acc, 0), do: {acc, rest}
+  def parse(<<size::unsigned-integer-size(32), field_type::unsigned-integer-size(8), data::binary>>, acc, n) do
     new_size = size - 1
-    <<field::bytes-size(new_size), next::binary>> = data
-    <<_type::unsigned-integer-size(8), size::unsigned-integer-size(16), data::binary>> = field
-    <<key::bytes-size(size), value::binary>> = data
-    acc = Map.put(acc, key, value)
-    parse(next, acc)
+    <<value::bytes-size(new_size), next::binary>> = data
+    acc = Map.put(acc, field_type, value)
+    parse(next, acc, n - 1)
   end
 end
