@@ -10,10 +10,11 @@ defmodule Aeroex.Protocol.Field do
     trid:                  7,
     scan_options:          8,
     index_name:           21,
-    index_filter:         22,
-    index_range:          23,
+    index_range:          22,
+    index_filter:         23,
     index_limit:          24,
     index_order_by:       25,
+    index_type:           26,
     udf_package_name:     30,
     udf_function:         31,
     udf_arglist:          32,
@@ -46,5 +47,20 @@ defmodule Aeroex.Protocol.Field do
     <<value::bytes-size(new_size), next::binary>> = data
     acc = Map.put(acc, field_type, value)
     parse(next, acc, n - 1)
+  end
+end
+
+defmodule Aeroex.Protocol.Field.IndexRange do
+  def get(bin_name, value_min, value_max) do
+    <<
+      0x01,
+      byte_size(bin_name)::unsigned-integer-size(8),
+      bin_name::binary(),
+      0x01,
+      8::unsigned-integer-size(32),
+      value_min::unsigned-integer-size(64),
+      8::unsigned-integer-size(32),
+      value_max::unsigned-integer-size(64)
+    >>
   end
 end

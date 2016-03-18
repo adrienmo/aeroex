@@ -29,8 +29,7 @@ defmodule Aeroex.Connection.Connection do
 
   def handle_call({:send, data}, _, state) do
     :ok = :gen_tcp.send(state.socket, data)
-    msg = receive_data(state.socket)
-    {:reply, msg, state}
+    {:reply, receive_data(state.socket), state}
   end
 
   def receive_data(socket) do

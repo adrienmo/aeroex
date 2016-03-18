@@ -17,6 +17,16 @@ defmodule Aeroex do
     execute(ref, flags, fields, operations)
   end
 
+  def scan(ref \\ nil, namespace, set, bin_name, value_min, value_max) do
+
+    index_range = Aeroex.Protocol.Field.IndexRange.get(bin_name, value_min, value_max)
+
+    fields = [{:namespace, namespace}, {:set, set}, {:index_type, <<0x00>>}, {:trid, :crypto.rand_bytes(8)}, {:index_range, index_range}]
+    flags = [:read]
+    operations = []
+
+    execute(ref, flags, fields, operations)
+  end
 
   def read(ref \\ nil, namespace, set, key) do
     fields = get_fields(namespace, set, key)
@@ -48,9 +58,10 @@ defmodule Aeroex do
     [{:namespace, namespace}, {:set, set}, {:key,  <<3>> <> key}]
   end
 
+
   defp execute(nil, flags, fields, operations) do
-    pool_name = Aeroex.Manager.get_pool_name(fields)
-    execute(pool_name, flags, fields, operations)
+    pool_info = Aeroex.Manager.get_pool_name(fields)
+    execute(pool_info, flags, fields, operations)
   end
 
   defp execute(pid, flags, fields, operations) when is_pid(pid) do
@@ -66,6 +77,7 @@ defmodule Aeroex do
   end
 
   defp execute(pools, flags, fields, operations) when is_list(pools) do
-    for pool_name <- pools, do: execute(pool_name, flags, fields, operations)
+    results = for pool_name <- pools, do: execute(pool_name, flags, fields, operations)
+    List.flatten(results)
   end
 end

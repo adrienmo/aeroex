@@ -38,14 +38,14 @@ defmodule Aeroex.Protocol.Operation do
     get(rest, acc <> get(operation))
   end
 
-  def parse(payload), do: parse(payload, %{})
-  def parse(<<>>, acc), do: acc
+  def parse(payload, n), do: parse(payload, %{}, n)
+  def parse(rest, acc, 0), do: {acc, rest}
   def parse(<<size::unsigned-integer-size(32), op::unsigned-integer-size(8),
     bin_data_type::unsigned-integer-size(8), _, bin_name_length::unsigned-integer-size(8),
-    data::binary>>, acc) do
+    data::binary>>, acc, n) do
     new_size = size - 4 - bin_name_length
     <<bin_name::bytes-size(bin_name_length), value::bytes-size(new_size), next::binary>> = data
     acc = Map.put(acc, bin_name, Data.parse(value, bin_data_type))
-    parse(next, acc)
+    parse(next, acc, n - 1)
   end
 end

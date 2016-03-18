@@ -46,6 +46,10 @@ defmodule Aeroex.Protocol do
     >>
   end
 
+  def parse(multi_response) when is_list(multi_response) do
+    for response <- multi_response, do: parse(response)
+  end
+
   def parse(<<header::bytes-size(8), data::binary>>) do
     parse(Header.parse(header), data)
   end
@@ -60,26 +64,58 @@ defmodule Aeroex.Protocol do
   end
 
   def parse({:message, _}, data) do
-    <<header::bytes-size(22), payload::binary>> = data
-    <<
-      _::bytes-size(5),
-      result_code::unsigned-integer-size(8),
-      _::bytes-size(12),
-      n_fields::unsigned-integer-size(16),
-      n_ops::unsigned-integer-size(16)
-    >> = header
-
-    case result_code do
-      0 ->
-        {_fields, payload} = Field.parse(payload, n_fields)
-        operations = Operation.parse(payload)
-        {:ok, operations}
-      error_code ->
-        {:error, error_code}
+    case parse_message(data, []) do
+      [] ->
+        {:ok, nil}
+      [elem] ->
+        elem
+      multi_response ->
+        multi_response
     end
   end
 
   def parse(_, _) do
     {:error, "unknown format"}
+  end
+
+  def parse_message(<<>>, acc), do: acc
+  def parse_message(<<header::bytes-size(22), payload::binary>>, acc) do
+    header = parse_message_head(header)
+
+    case header.result_code do
+      0 ->
+        {fields, payload} = Field.parse(payload, header.n_fields)
+        {operations, payload} = Operation.parse(payload, header.n_ops)
+        if operations == %{} do
+          parse_message(payload, acc)
+        else
+          parse_message(payload, [{:ok, operations}| acc])
+        end
+      error_code ->
+        {:error, error_code}
+    end
+  end
+
+  def parse_message_head(<<
+      _,
+      flag_bin::binary-size(3),
+      _,
+      result_code::unsigned-integer-size(8),
+      generation::unsigned-integer-size(32),
+      record_ttl::unsigned-integer-size(32),
+      transaction_ttl::unsigned-integer-size(32),
+      n_fields::unsigned-integer-size(16),
+      n_ops::unsigned-integer-size(16),
+      _::binary()
+    >>) do
+    %{
+      flags: Flag.parse(flag_bin),
+      result_code: result_code,
+      generation: generation,
+      record_ttl: record_ttl,
+      transaction_ttl: transaction_ttl,
+      n_fields: n_fields,
+      n_ops: n_ops
+    }
   end
 end

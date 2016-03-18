@@ -18,7 +18,7 @@ defmodule Aeroex.Connection.Pool do
     pool_options = [
       name: {:local, pool_name},
       worker_module: Aeroex.Connection.Worker,
-      size: 10,
+      size: 1,
       max_overflow: 0
     ]
 

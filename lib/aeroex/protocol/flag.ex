@@ -1,5 +1,6 @@
 defmodule Aeroex.Protocol.Flag do
   import Aeroex.Tools
+  use Bitwise
   @info %{
     ##### info1 byte #####################
     read:                  bit_value(1,3),
@@ -39,5 +40,15 @@ defmodule Aeroex.Protocol.Flag do
   def get([], acc), do: acc
   def get([flag|flags], acc) do
     get(flags, acc + @info[flag])
+  end
+
+  def parse(<<flags::unsigned-integer-size(24)>>) do
+    Enum.reduce(@info, [], fn({k, v}, acc) ->
+      if band(flags, v) == 0 do
+        acc
+      else
+        [k|acc]
+      end
+    end)
   end
 end
